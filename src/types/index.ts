@@ -1,3 +1,5 @@
+import type { ComponentType } from 'react'
+
 // ─── カテゴリ ────────────────────────────────────────────────
 export type CategoryId = 'kihon' | 'yakugaku' | 'generic' | 'tokutei' | 'gijutsu' | 'other'
 
@@ -8,7 +10,7 @@ export interface Category {
   bgColor: string      // Tailwind bg color class
   borderColor: string  // Tailwind border color class
   hex: string          // 実際のHEXカラー（アイコン等に使用）
-  icon: string         // emoji
+  icon: ComponentType<{ size?: number; className?: string; strokeWidth?: number }>
   sortOrder: number
 }
 

@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Search, CheckCircle, FileText, MessageSquare, Pill, BookOpen, Settings } from 'lucide-react'
+import { Search, CheckCircle, FileText, MessageSquare, Pill, BookOpen, Settings, Scissors, ClipboardList, Receipt } from 'lucide-react'
 
 const NAV_ITEMS = [
   { href: '/', label: '加算検索', icon: Search, description: '加算名・キーワードで検索' },
@@ -20,8 +20,10 @@ export function SideNav() {
     <aside className="w-56 flex-shrink-0 bg-white border-r border-slate-200 flex flex-col h-full">
       {/* ロゴ */}
       <div className="px-4 py-4 border-b border-slate-100">
-        <div className="flex items-center gap-2">
-          <span className="text-2xl">💊</span>
+        <div className="flex items-center gap-2.5">
+          <span className="flex items-center justify-center w-9 h-9 rounded-xl bg-blue-600 shadow-sm shrink-0">
+            <Pill size={18} className="text-white" strokeWidth={2.5} />
+          </span>
           <div>
             <h1 className="text-base font-bold text-slate-900">加算ナビ</h1>
             <p className="text-[11px] text-slate-400">令和8年度対応</p>

@@ -1,3 +1,4 @@
+import { Receipt, ClipboardList, Pill, Briefcase, FlaskConical, Grid2x2 } from 'lucide-react'
 import { Category } from '@/types'
 
 export const CATEGORIES: Category[] = [
@@ -8,7 +9,7 @@ export const CATEGORIES: Category[] = [
     bgColor: 'bg-blue-50',
     borderColor: 'border-blue-200',
     hex: '#3B82F6',
-    icon: '🏥',
+    icon: Receipt,
     sortOrder: 1,
   },
   {
@@ -18,7 +19,7 @@ export const CATEGORIES: Category[] = [
     bgColor: 'bg-emerald-50',
     borderColor: 'border-emerald-200',
     hex: '#10B981',
-    icon: '📋',
+    icon: ClipboardList,
     sortOrder: 2,
   },
   {
@@ -28,7 +29,7 @@ export const CATEGORIES: Category[] = [
     bgColor: 'bg-violet-50',
     borderColor: 'border-violet-200',
     hex: '#8B5CF6',
-    icon: '💊',
+    icon: Pill,
     sortOrder: 3,
   },
   {
@@ -38,7 +39,7 @@ export const CATEGORIES: Category[] = [
     bgColor: 'bg-amber-50',
     borderColor: 'border-amber-200',
     hex: '#F59E0B',
-    icon: '🔍',
+    icon: Briefcase,
     sortOrder: 4,
   },
   {
@@ -48,7 +49,7 @@ export const CATEGORIES: Category[] = [
     bgColor: 'bg-rose-50',
     borderColor: 'border-rose-200',
     hex: '#F43F5E',
-    icon: '⚗️',
+    icon: FlaskConical,
     sortOrder: 5,
   },
   {
@@ -58,7 +59,7 @@ export const CATEGORIES: Category[] = [
     bgColor: 'bg-slate-50',
     borderColor: 'border-slate-200',
     hex: '#64748B',
-    icon: '📌',
+    icon: Grid2x2,
     sortOrder: 6,
   },
 ]

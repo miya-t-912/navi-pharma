@@ -95,7 +95,7 @@ export function AdditionSearch() {
               }`}
               aria-pressed={isSelected}
             >
-              <span>{cat.icon}</span>
+              <cat.icon size={12} strokeWidth={2} className="shrink-0" />
               <span className="leading-tight">{cat.name}</span>
             </button>
           )

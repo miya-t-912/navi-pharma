@@ -18,7 +18,7 @@ export function CategoryBadge({ categoryId, size = 'md' }: CategoryBadgeProps) {
           : 'px-2.5 py-1 text-xs'
       }`}
     >
-      <span className="text-[11px]">{category.icon}</span>
+      <category.icon size={11} strokeWidth={2} className="shrink-0" />
       {category.name}
     </span>
   )

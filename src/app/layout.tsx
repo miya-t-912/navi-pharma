@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { Noto_Sans_JP } from 'next/font/google'
 import './globals.css'
+import { Pill } from 'lucide-react'
 import { BottomNav } from '@/components/layout/BottomNav'
 import { SideNav } from '@/components/layout/SideNav'
 import { UpdateBanner } from '@/components/common/UpdateBanner'
@@ -54,7 +55,9 @@ export default function RootLayout({
         <div className="lg:hidden flex flex-col min-h-screen">
           {/* モバイルヘッダー */}
           <header className="sticky top-0 z-30 bg-white border-b border-slate-200 px-4 py-3 flex items-center gap-2">
-            <span className="text-xl">💊</span>
+            <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-blue-600 shadow-sm">
+              <Pill size={16} className="text-white" strokeWidth={2.5} />
+            </span>
             <h1 className="text-lg font-bold text-slate-900">加算ナビ</h1>
             <span className="ml-auto text-xs text-slate-400 bg-slate-100 px-2 py-1 rounded">
               R8対応

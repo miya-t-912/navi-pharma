@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { flushSync } from 'react-dom'
 import {
   CheckCircle, XCircle, AlertCircle, Calculator, Copy, RotateCcw,
-  Check, ChevronDown, ChevronUp, Settings2, Pill, Wrench, MessageSquareWarning, Home,
+  Check, ChevronDown, ChevronUp, Settings2, Pill, ClipboardList, Scissors, MessageSquareWarning, Home,
 } from 'lucide-react'
 import {
   PharmacySettings,
@@ -417,7 +417,7 @@ export default function CheckPage() {
           管理加算
       ══════════════════════════════════════════════════════ */}
       <Card>
-        <SectionLabel icon={<Pill size={13} className="text-teal-500" />} color="teal">
+        <SectionLabel icon={<ClipboardList size={13} className="text-teal-500" />} color="teal">
           管理加算
         </SectionLabel>
         <p className="text-xs text-slate-500 mt-1 mb-1">
@@ -708,7 +708,7 @@ export default function CheckPage() {
           技術加算（自家製剤・一包化）
       ══════════════════════════════════════════════════════ */}
       <Card>
-        <SectionLabel icon={<Wrench size={13} className="text-indigo-500" />} color="indigo">
+        <SectionLabel icon={<Scissors size={13} className="text-indigo-500" />} color="indigo">
           技術加算
         </SectionLabel>
         <p className="text-xs text-slate-500 mt-1 mb-1">
