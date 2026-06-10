@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { BookOpen, HelpCircle, ChevronDown, ChevronUp } from 'lucide-react'
+import Link from 'next/link'
+import { BookOpen, HelpCircle, ChevronDown, ChevronUp, Database, ChevronRight } from 'lucide-react'
 
 const FAQ_ITEMS = [
   {
@@ -132,8 +133,23 @@ export default function OtherPage() {
       </div>
 
       <p className="text-center text-xs text-slate-400 pt-2">
-        全 {FAQ_ITEMS.length} 件のFAQ（管理者画面から追加・編集可能）
+        全 {FAQ_ITEMS.length} 件のFAQ
       </p>
+
+      {/* マスタ管理リンク */}
+      <Link
+        href="/admin"
+        className="flex items-center gap-3 bg-white border border-slate-200 rounded-xl px-4 py-3.5 hover:bg-slate-50 transition-colors"
+      >
+        <span className="flex items-center justify-center w-9 h-9 rounded-lg bg-slate-100 shrink-0">
+          <Database size={17} className="text-slate-500" />
+        </span>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium text-slate-800">マスタ管理</p>
+          <p className="text-xs text-slate-500 mt-0.5">薬価マスタのCSVアップロード・更新</p>
+        </div>
+        <ChevronRight size={16} className="text-slate-300 shrink-0" />
+      </Link>
     </div>
   )
 }

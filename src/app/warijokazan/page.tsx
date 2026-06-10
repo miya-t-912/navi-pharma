@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { Pill, CheckCircle, XCircle, Search, X } from 'lucide-react'
-import { DRUG_MASTER, searchDrugByName, checkSplitStrengthExists } from '@/data/drugMaster'
+import { DRUG_MASTER, loadCustomMaster, searchDrugByName, checkSplitStrengthExists } from '@/data/drugMaster'
 import { DrugMaster } from '@/types'
 import { CopyButton } from '@/components/common/CopyButton'
 
@@ -16,7 +16,13 @@ export default function WarijoPage() {
   const [splitRatio, setSplitRatio] = useState<SplitRatio>(2)
   const [status, setStatus] = useState<CheckStatus>('idle')
   const [matchingDrugs, setMatchingDrugs] = useState<DrugMaster[]>([])
+  const [activeDrugs, setActiveDrugs] = useState<DrugMaster[]>(DRUG_MASTER)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    const custom = loadCustomMaster()
+    if (custom) setActiveDrugs(custom)
+  }, [])
 
   const afterSplitMg = selectedDrug ? selectedDrug.strengthMg / splitRatio : 0
 
@@ -28,7 +34,7 @@ export default function WarijoPage() {
       return
     }
     debounceRef.current = setTimeout(() => {
-      setSuggestions(searchDrugByName(nameQuery))
+      setSuggestions(searchDrugByName(nameQuery, activeDrugs))
     }, 300)
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current)
@@ -45,7 +51,7 @@ export default function WarijoPage() {
 
   const handleCheck = () => {
     if (!selectedDrug) return
-    const matches = checkSplitStrengthExists(selectedDrug.genericName, afterSplitMg)
+    const matches = checkSplitStrengthExists(selectedDrug.genericName, afterSplitMg, activeDrugs)
     setMatchingDrugs(matches)
     setStatus(matches.length > 0 ? 'cannot_claim' : 'can_claim')
   }

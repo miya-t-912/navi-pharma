@@ -27,13 +27,28 @@ export const DRUG_MASTER: DrugMaster[] = [
   { id: 'd-017', genericName: 'フロセミド', brandName: 'ラシックス錠40mg', dosageForm: '錠', strengthMg: 40, unit: 'mg', updatedAt: '2026-06-01' },
 ]
 
+export const DRUG_MASTER_STORAGE_KEY = 'kaisan-navi-drug-master-v1'
+export const DRUG_MASTER_META_KEY   = 'kaisan-navi-drug-master-meta'
+
+// localStorage に保存されたカスタムマスタを返す（なければ null）
+export function loadCustomMaster(): DrugMaster[] | null {
+  if (typeof window === 'undefined') return null
+  try {
+    const s = localStorage.getItem(DRUG_MASTER_STORAGE_KEY)
+    if (!s) return null
+    const parsed = JSON.parse(s)
+    return Array.isArray(parsed) && parsed.length > 0 ? parsed : null
+  } catch {
+    return null
+  }
+}
+
 // 前方一致インクリメンタル検索
-export const searchDrugByName = (query: string): DrugMaster[] => {
+export const searchDrugByName = (query: string, drugs: DrugMaster[] = DRUG_MASTER): DrugMaster[] => {
   if (!query || query.length < 2) return []
   const q = query.toLowerCase()
-  // 重複のないgenernicNameリストを返す
   const seen = new Set<string>()
-  return DRUG_MASTER.filter((d) => {
+  return drugs.filter((d) => {
     const matches =
       d.genericName.toLowerCase().includes(q) ||
       d.brandName.toLowerCase().includes(q)
@@ -45,19 +60,13 @@ export const searchDrugByName = (query: string): DrugMaster[] => {
   })
 }
 
-// 特定の成分名・mg以外の規格が存在するか確認
-export const findOtherStrengths = (genericName: string, excludeMg: number): DrugMaster[] => {
-  return DRUG_MASTER.filter(
-    (d) => d.genericName === genericName && d.strengthMg !== excludeMg
-  )
-}
-
 // 割錠後のmg規格が存在するか
 export const checkSplitStrengthExists = (
   genericName: string,
-  afterSplitMg: number
+  afterSplitMg: number,
+  drugs: DrugMaster[] = DRUG_MASTER,
 ): DrugMaster[] => {
-  return DRUG_MASTER.filter(
+  return drugs.filter(
     (d) =>
       d.genericName === genericName &&
       Math.abs(d.strengthMg - afterSplitMg) < 0.001

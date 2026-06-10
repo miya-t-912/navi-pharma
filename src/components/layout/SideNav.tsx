@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Search, CheckCircle, FileText, MessageSquare, Pill, BookOpen, Settings, Scissors, ClipboardList, Receipt } from 'lucide-react'
+import { Search, CheckCircle, FileText, MessageSquare, Pill, BookOpen, Database } from 'lucide-react'
 
 const NAV_ITEMS = [
   { href: '/', label: '加算検索', icon: Search, description: '加算名・キーワードで検索' },
@@ -61,7 +61,7 @@ export function SideNav() {
         })}
       </nav>
 
-      {/* 管理者メニュー */}
+      {/* マスタ管理 */}
       <div className="px-2 py-3 border-t border-slate-100">
         <Link
           href="/admin"
@@ -71,8 +71,8 @@ export function SideNav() {
               : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'
           }`}
         >
-          <Settings size={18} strokeWidth={1.8} className="text-slate-400" />
-          <span className="text-sm">管理者設定</span>
+          <Database size={18} strokeWidth={1.8} className={pathname.startsWith('/admin') ? 'text-slate-700' : 'text-slate-400'} />
+          <span className="text-sm">マスタ管理</span>
         </Link>
       </div>
     </aside>
