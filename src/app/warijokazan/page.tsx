@@ -39,7 +39,7 @@ export default function WarijoPage() {
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current)
     }
-  }, [nameQuery])
+  }, [nameQuery, activeDrugs])
 
   const handleSelectDrug = (drug: DrugMaster) => {
     setSelectedDrug(drug)
@@ -78,6 +78,9 @@ export default function WarijoPage() {
         <div className="px-4 py-3 bg-rose-50 border-b border-rose-100 flex items-center gap-2">
           <Pill size={16} className="text-rose-500" />
           <h3 className="text-sm font-semibold text-rose-700">割錠加算 算定可否チェック</h3>
+          <span className={`ml-auto text-xs px-2 py-0.5 rounded-full font-medium ${activeDrugs === DRUG_MASTER ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>
+            {activeDrugs === DRUG_MASTER ? `サンプル ${DRUG_MASTER.length}件` : `カスタム ${activeDrugs.length.toLocaleString()}件`}
+          </span>
         </div>
 
         <div className="p-4 space-y-4">

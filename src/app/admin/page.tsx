@@ -121,12 +121,17 @@ export default function AdminPage() {
     setSaveStatus('idle')
     const reader = new FileReader()
     reader.onload = (ev) => {
-      const text = ev.target?.result as string
+      const buffer = ev.target?.result as ArrayBuffer
+      // UTF-8（BOMあり・なし両対応）で試み、文字化けがあればShift-JISで再試行
+      let text = new TextDecoder('UTF-8').decode(buffer).replace(/^﻿/, '')
+      if (text.includes('�')) {
+        text = new TextDecoder('Shift_JIS').decode(buffer)
+      }
       const { drugs, errors } = parseCSV(text)
       setPreview(drugs)
       setParseErrors(errors)
     }
-    reader.readAsText(file, 'UTF-8')
+    reader.readAsArrayBuffer(file)
   }
 
   const handleSave = () => {
