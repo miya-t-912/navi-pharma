@@ -23,7 +23,6 @@ export interface PharmacySettings {
   kihonRyo: KihonRyo
   chiiikiKasan: ChiiikiKasan
   renkeiKyo: boolean           // 連携強化加算 届出あり
-  basupDelivered: boolean      // 調剤ベースアップ評価料 届出あり
   biosimilarDelivered: boolean // バイオ後続品調剤体制加算 届出あり
   denshiRenkei: boolean        // 電子的調剤情報連携体制整備加算（電子処方箋+電子薬歴+マイナ保険証30%以上）
   yakkanKyujitsu: boolean      // 夜間・休日等加算 施設基準届出あり
@@ -33,7 +32,6 @@ export const DEFAULT_PHARMACY: PharmacySettings = {
   kihonRyo: 'kihon-1',
   chiiikiKasan: '1',
   renkeiKyo: true,
-  basupDelivered: true,
   biosimilarDelivered: false,
   denshiRenkei: false,
   yakkanKyujitsu: false,
@@ -106,6 +104,9 @@ export interface PatientConditions {
   // taisei2i:  体制加算2イ（単一建物1人・100点）
   // taisei2ro: 体制加算2ロ（施設・複数人・50点）
 
+  // 調剤ベースアップ評価料（処方箋1枚ごとに算定・届出あり薬局のみ）
+  basupToday: boolean          // 調剤ベースアップ評価料（4点）を今回算定する
+
   // 令和8年度新設・高優先度加算
   shoniTokutei: boolean        // 小児特定加算（350点・月1回）- 医療的ケア児（18歳未満）
   chozaigoKanri: 'none' | 'diabetes' | 'heartfailure'
@@ -144,6 +145,7 @@ export const DEFAULT_CONDITIONS: PatientConditions = {
   genyakuOk: false,
   biosimilarDispensed: false,
   zaitakuVisit: 'none',
+  basupToday: true,
   shoniTokutei: false,
   chozaigoKanri: 'none',
   shisetsuRenkei: false,
@@ -247,14 +249,14 @@ export function evaluateConditions(
   }
 
   // ═══════════════════════════════════════════════════════════
-  // D. 調剤ベースアップ評価料
+  // D. 調剤ベースアップ評価料（処方箋ごとに算定・患者条件で制御）
   // ═══════════════════════════════════════════════════════════
   {
     const basup = findAddition('basup-hyoka')
-    if (pharmacy.basupDelivered) {
+    if (cond.basupToday) {
       canClaim.push({ addition: basup, points: basup.points })
     } else {
-      cannotClaim.push({ addition: basup, reason: '調剤ベースアップ評価料の施設基準届出なし' })
+      cannotClaim.push({ addition: basup, reason: '今回算定しない（届出なし・または算定対象外）' })
     }
   }
 

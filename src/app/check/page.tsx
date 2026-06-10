@@ -35,7 +35,6 @@ function calcPharmacyBasePoints(p: PharmacySettings): number {
     total += isTokubetsuA ? Math.floor(chiiiki.points * 0.1) : chiiiki.points
   }
   if (p.renkeiKyo && !isTokubetsuB) total += 5
-  if (p.basupDelivered) total += 4
   if (p.biosimilarDelivered && !isTokubetsuB) {
     total += isTokubetsuA ? Math.floor(50 * 0.1) : 50
   }
@@ -51,7 +50,6 @@ function pharmacySummaryParts(p: PharmacySettings): string[] {
   if (kihon) parts.push(`${kihon.label} ${kihon.points}点`)
   if (chiiiki && chiiiki.points > 0) parts.push(`地域支援${chiiiki.label} ${chiiiki.points}点`)
   if (p.renkeiKyo) parts.push('連携強化 5点')
-  if (p.basupDelivered) parts.push('ベースアップ 4点')
   if (p.biosimilarDelivered) parts.push('バイオ後続品 50点')
   if (p.denshiRenkei) parts.push('電子連携 8点')
   return parts
@@ -279,12 +277,6 @@ export default function CheckPage() {
                   sub="災害・感染症発生時の医療機関連携体制・協定締結済（特別調剤基本料A算定薬局は感染対策向上加算届出医療機関からの処方箋では算定不可）"
                 />
                 <CheckboxRow
-                  checked={pharmacy.basupDelivered}
-                  onChange={(v) => setPharmacy({ basupDelivered: v })}
-                  label="調剤ベースアップ評価料 届出あり（4点）"
-                  sub="処遇改善のための賃上げ実施・届出済"
-                />
-                <CheckboxRow
                   checked={pharmacy.biosimilarDelivered}
                   onChange={(v) => setPharmacy({ biosimilarDelivered: v })}
                   disabled={isTokubetsuB}
@@ -369,6 +361,17 @@ export default function CheckPage() {
               </span>
             </>
           )}
+        </div>
+
+        {/* 調剤ベースアップ評価料 */}
+        <div className="mt-3 border-t border-slate-100 pt-3">
+          <div className="text-xs font-semibold text-slate-500 mb-1.5">調剤ベースアップ評価料（処方箋1枚ごと）</div>
+          <CheckboxRow
+            checked={conditions.basupToday}
+            onChange={(v) => set('basupToday', v)}
+            label="今回算定する（4点）"
+            sub="届出あり薬局は処方箋1枚ごとに算定。届出なし・算定対象外の場合はチェックを外す"
+          />
         </div>
 
         {/* 調剤物価対応料 */}
