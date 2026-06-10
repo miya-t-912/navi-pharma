@@ -5,35 +5,45 @@ import { Database, Download, Upload, CheckCircle, Trash2, ExternalLink, AlertCir
 import { DrugMaster } from '@/types'
 import { DRUG_MASTER, DRUG_MASTER_STORAGE_KEY, DRUG_MASTER_META_KEY } from '@/data/drugMaster'
 
-const TEMPLATE_CSV = `成分名,規格,品名,メーカー
-アムロジピンベシル酸塩,2.5mg1錠,アムロジン錠2.5mg,住友ファーマ
-アムロジピンベシル酸塩,5mg1錠,アムロジン錠5mg,住友ファーマ
-アムロジピンベシル酸塩,10mg1錠,アムロジン錠10mg,住友ファーマ
-エナラプリルマレイン酸塩,2.5mg1錠,レニベース錠2.5,MSD
-エナラプリルマレイン酸塩,5mg1錠,レニベース錠5,MSD
-エナラプリルマレイン酸塩,10mg1錠,レニベース錠10,MSD
-ワルファリンカリウム,0.5mg1錠,ワーファリン錠0.5mg,第一三共
-ワルファリンカリウム,1mg1錠,ワーファリン錠1mg,第一三共
-ワルファリンカリウム,2mg1錠,ワーファリン錠2mg,第一三共
-ワルファリンカリウム,5mg1錠,ワーファリン錠5mg,第一三共
-フロセミド,10mg1錠,ラシックス錠10mg,サノフィ
-フロセミド,20mg1錠,ラシックス錠20mg,サノフィ
-フロセミド,40mg1錠,ラシックス錠40mg,サノフィ
-レボチロキシンナトリウム水和物,12.5μg1錠,チラーヂンS錠12.5μg,あすか製薬
-レボチロキシンナトリウム水和物,25μg1錠,チラーヂンS錠25μg,あすか製薬
-レボチロキシンナトリウム水和物,50μg1錠,チラーヂンS錠50μg,あすか製薬
-レボチロキシンナトリウム水和物,100μg1錠,チラーヂンS錠100μg,あすか製薬`
+const TEMPLATE_CSV = `成分名,規格,品名
+アムロジピンベシル酸塩,２．５ｍｇ１錠,アムロジン錠２．５ｍｇ
+アムロジピンベシル酸塩,５ｍｇ１錠,アムロジン錠５ｍｇ
+アムロジピンベシル酸塩,１０ｍｇ１錠,アムロジン錠１０ｍｇ
+エナラプリルマレイン酸塩,２．５ｍｇ１錠,レニベース錠２．５
+エナラプリルマレイン酸塩,５ｍｇ１錠,レニベース錠５
+エナラプリルマレイン酸塩,１０ｍｇ１錠,レニベース錠１０
+ワルファリンカリウム,０．５ｍｇ１錠,ワーファリン錠０．５ｍｇ
+ワルファリンカリウム,１ｍｇ１錠,ワーファリン錠１ｍｇ
+ワルファリンカリウム,２ｍｇ１錠,ワーファリン錠２ｍｇ
+ワルファリンカリウム,５ｍｇ１錠,ワーファリン錠５ｍｇ
+フロセミド,１０ｍｇ１錠,ラシックス錠１０ｍｇ
+フロセミド,２０ｍｇ１錠,ラシックス錠２０ｍｇ
+フロセミド,４０ｍｇ１錠,ラシックス錠４０ｍｇ
+レボチロキシンナトリウム水和物,１２．５μｇ１錠,チラーヂンS錠１２．５μｇ
+レボチロキシンナトリウム水和物,２５μｇ１錠,チラーヂンS錠２５μｇ
+レボチロキシンナトリウム水和物,５０μｇ１錠,チラーヂンS錠５０μｇ
+レボチロキシンナトリウム水和物,１００μｇ１錠,チラーヂンS錠１００μｇ`
 
-// 品名の文字列からmg値を抽出（μg→mg変換あり）
+// 全角英数字・記号を半角に正規化
+function normalizeWidth(s: string): string {
+  return s
+    .replace(/[０-９]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xFEE0))
+    .replace(/[ａ-ｚＡ-Ｚ]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xFEE0))
+    .replace(/．/g, '.')
+}
+
+// 規格・品名の文字列からmg値を抽出（全角対応、μg→mg変換あり）
 function extractStrengthMg(name: string): number | null {
-  const ugMatch = name.match(/(\d+(?:\.\d+)?)\s*μg/i)
+  const n = normalizeWidth(name)
+
+  const ugMatch = n.match(/(\d+(?:\.\d+)?)\s*μg/i)
   if (ugMatch) return parseFloat(ugMatch[1]) / 1000
 
-  const mgMatch = name.match(/(\d+(?:\.\d+)?)\s*mg/i)
+  const mgMatch = n.match(/(\d+(?:\.\d+)?)\s*mg/i)
   if (mgMatch) return parseFloat(mgMatch[1])
 
-  // 単位なし数字（例: レニベース錠2.5）
-  const numMatch = name.match(/錠(\d+(?:\.\d+)?)(?:[^.\d]|$)/)
+  // 単位なし数字（例: ベンザリン錠2、レニベース錠2.5）
+  const numMatch = n.match(/錠(\d+(?:\.\d+)?)(?:[^.\d]|$)/)
   if (numMatch) return parseFloat(numMatch[1])
 
   return null
@@ -54,17 +64,19 @@ function parseCSV(text: string): { drugs: DrugMaster[]; errors: string[] } {
   dataLines.forEach((line, i) => {
     const cols = line.split(',').map((c) => c.trim().replace(/^"|"$/g, ''))
     if (cols.length < 3) return // 列数不足の行は無視（空行・特殊行など）
-    // A=成分名, B=規格, C=品名, D=メーカー（厚労省Excel形式）
+    // A=成分名, B=規格, C=品名（厚労省Excel形式）
     const genericName = cols[0]
+    const kisoku      = cols[1]
     const brandName   = cols[2]
 
     if (!genericName) { errors.push(`${i + 2}行目: 成分名が空`); return }
     if (!brandName)   { errors.push(`${i + 2}行目: 品名が空`); return }
     if (!brandName.includes('錠')) return // 錠剤以外は無視（警告なし）
 
-    const strengthMg = extractStrengthMg(brandName)
+    // 規格列(B)優先、なければ品名(C)から抽出
+    const strengthMg = extractStrengthMg(kisoku) ?? extractStrengthMg(brandName)
     if (strengthMg === null || strengthMg <= 0) {
-      errors.push(`${i + 2}行目: 品名から規格mg抽出できず（${brandName}）`)
+      errors.push(`${i + 2}行目: 規格mg抽出できず（規格:${kisoku} 品名:${brandName}）`)
       return
     }
 
@@ -246,9 +258,8 @@ export default function AdminPage() {
                   <tbody className="divide-y divide-slate-200">
                     {[
                       ['A', '成分名 ✅使用', 'アムロジピンベシル酸塩'],
-                      ['B', '規格（無視）', '5mg1錠'],
-                      ['C', '品名 ✅使用', 'アムロジン錠5mg'],
-                      ['D', 'メーカー（無視）', '住友ファーマ'],
+                      ['B', '規格 ✅mg抽出に使用', '５ｍｇ１錠'],
+                      ['C', '品名 ✅使用・錠剤判定', 'アムロジン錠５ｍｇ'],
                     ].map(([col, label, ex]) => (
                       <tr key={col}>
                         <td className="px-3 py-1.5 font-mono text-slate-500">{col}</td>
