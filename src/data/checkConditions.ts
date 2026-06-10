@@ -50,7 +50,7 @@ export interface PatientConditions {
   onlineShido: boolean   // オンライン服薬指導 → 服薬管理指導料③（59点）※①②と排他
 
   // 調剤物価対応料（3月1回・届出不要）
-  bukkaAlreadyClaimed: boolean // 直近3ヶ月以内に同一患者へ算定済（チェックで算定不可になる）
+  bukkaToday: boolean          // 今回算定する（直近3ヶ月以内に同一患者への算定がない場合のみ可）
 
   // 処方内容（調剤管理料算定に使用）
   prescriptionDays: number    // 処方日数（0=内服薬なし）
@@ -104,6 +104,9 @@ export interface PatientConditions {
   // taisei2i:  体制加算2イ（単一建物1人・100点）
   // taisei2ro: 体制加算2ロ（施設・複数人・50点）
 
+  // 電子的調剤情報連携体制整備加算（月1回・届出あり薬局のみ）
+  denshiRenkeiToday: boolean   // 今回算定する（月1回・当月初回来局時など）
+
   // 調剤ベースアップ評価料（処方箋1枚ごとに算定・届出あり薬局のみ）
   basupToday: boolean          // 調剤ベースアップ評価料（4点）を今回算定する
 
@@ -121,7 +124,7 @@ export const DEFAULT_CONDITIONS: PatientConditions = {
   techoAri: true,
   sangatsuInai: true,
   onlineShido: false,
-  bukkaAlreadyClaimed: false,
+  bukkaToday: true,
   prescriptionDays: 14,
   medicineCount: 2,
   mayakuOk: false,
@@ -145,6 +148,7 @@ export const DEFAULT_CONDITIONS: PatientConditions = {
   genyakuOk: false,
   biosimilarDispensed: false,
   zaitakuVisit: 'none',
+  denshiRenkeiToday: true,
   basupToday: true,
   shoniTokutei: false,
   chozaigoKanri: 'none',
@@ -265,16 +269,16 @@ export function evaluateConditions(
   // ═══════════════════════════════════════════════════════════
   {
     const bukka = findAddition('bukka-tairyo')
-    if (!cond.bukkaAlreadyClaimed) {
+    if (cond.bukkaToday) {
       canClaim.push({
         addition: bukka,
         points: bukka.points,
-        note: '直近3ヶ月以内に算定なし（3月1回・届出不要）',
+        note: '3月1回・届出不要',
       })
     } else {
       cannotClaim.push({
         addition: bukka,
-        reason: '直近3ヶ月以内に算定済のため不可（3月1回・次回算定可能まで待機）',
+        reason: '今回算定しない（直近3ヶ月以内に同一患者への算定済）',
       })
     }
   }
@@ -315,16 +319,18 @@ export function evaluateConditions(
     const denshi = findAddition('denshi-renkei-taisei')
     if (isTokubetsuB) {
       cannotClaim.push({ addition: denshi, reason: '特別調剤基本料B算定薬局は算定不可' })
-    } else if (pharmacy.denshiRenkei) {
+    } else if (!pharmacy.denshiRenkei) {
+      cannotClaim.push({
+        addition: denshi,
+        reason: '要件未達（電子処方箋対応・電子薬歴導入・マイナ保険証利用率30%以上の3要件を全て満たす必要あり）',
+      })
+    } else if (!cond.denshiRenkeiToday) {
+      cannotClaim.push({ addition: denshi, reason: '今月すでに算定済（月1回・当月初回来局時のみ算定可）' })
+    } else {
       canClaim.push({
         addition: denshi,
         points: denshi.points,
         note: '月1回・電子処方箋＋電子薬歴＋マイナ保険証利用率30%以上の3要件を全て満たす',
-      })
-    } else {
-      cannotClaim.push({
-        addition: denshi,
-        reason: '要件未達（電子処方箋対応・電子薬歴導入・マイナ保険証利用率30%以上の3要件を全て満たす必要あり）',
       })
     }
   }

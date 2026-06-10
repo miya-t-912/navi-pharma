@@ -378,12 +378,24 @@ export default function CheckPage() {
         <div className="mt-3 border-t border-slate-100 pt-3">
           <div className="text-xs font-semibold text-slate-500 mb-1.5">調剤物価対応料（3月1回・届出不要）</div>
           <CheckboxRow
-            checked={conditions.bukkaAlreadyClaimed}
-            onChange={(v) => set('bukkaAlreadyClaimed', v)}
-            label="直近3ヶ月以内に算定済"
-            sub="チェックを外すと今回算定可（1点）。直近3ヶ月以内に同一患者へ算定済みの場合にチェック"
+            checked={conditions.bukkaToday}
+            onChange={(v) => set('bukkaToday', v)}
+            label="今回算定する（1点）"
+            sub="直近3ヶ月以内に同一患者へ算定済みの場合はチェックを外す"
           />
         </div>
+
+        {pharmacy.denshiRenkei && !isTokubetsuB && (
+          <div className="mt-3 border-t border-slate-100 pt-3">
+            <div className="text-xs font-semibold text-slate-500 mb-1.5">電子的調剤情報連携体制整備加算（月1回・届出あり薬局）</div>
+            <CheckboxRow
+              checked={conditions.denshiRenkeiToday}
+              onChange={(v) => set('denshiRenkeiToday', v)}
+              label="今回算定する（8点）"
+              sub="当月初回来局など、今月この患者にまだ算定していない場合のみ算定可"
+            />
+          </div>
+        )}
 
         {pharmacy.yakkanKyujitsu && (
           <div className="mt-3 border-t border-slate-100 pt-3">
