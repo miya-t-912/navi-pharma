@@ -5,24 +5,24 @@ import { Database, Download, Upload, CheckCircle, Trash2, ExternalLink, AlertCir
 import { DrugMaster } from '@/types'
 import { DRUG_MASTER, DRUG_MASTER_STORAGE_KEY, DRUG_MASTER_META_KEY } from '@/data/drugMaster'
 
-const TEMPLATE_CSV = `成分名,品名
-アムロジピンベシル酸塩,アムロジン錠2.5mg
-アムロジピンベシル酸塩,アムロジン錠5mg
-アムロジピンベシル酸塩,アムロジン錠10mg
-エナラプリルマレイン酸塩,レニベース錠2.5
-エナラプリルマレイン酸塩,レニベース錠5
-エナラプリルマレイン酸塩,レニベース錠10
-ワルファリンカリウム,ワーファリン錠0.5mg
-ワルファリンカリウム,ワーファリン錠1mg
-ワルファリンカリウム,ワーファリン錠2mg
-ワルファリンカリウム,ワーファリン錠5mg
-フロセミド,ラシックス錠10mg
-フロセミド,ラシックス錠20mg
-フロセミド,ラシックス錠40mg
-レボチロキシンナトリウム水和物,チラーヂンS錠12.5μg
-レボチロキシンナトリウム水和物,チラーヂンS錠25μg
-レボチロキシンナトリウム水和物,チラーヂンS錠50μg
-レボチロキシンナトリウム水和物,チラーヂンS錠100μg`
+const TEMPLATE_CSV = `成分名,規格,品名,メーカー
+アムロジピンベシル酸塩,2.5mg1錠,アムロジン錠2.5mg,住友ファーマ
+アムロジピンベシル酸塩,5mg1錠,アムロジン錠5mg,住友ファーマ
+アムロジピンベシル酸塩,10mg1錠,アムロジン錠10mg,住友ファーマ
+エナラプリルマレイン酸塩,2.5mg1錠,レニベース錠2.5,MSD
+エナラプリルマレイン酸塩,5mg1錠,レニベース錠5,MSD
+エナラプリルマレイン酸塩,10mg1錠,レニベース錠10,MSD
+ワルファリンカリウム,0.5mg1錠,ワーファリン錠0.5mg,第一三共
+ワルファリンカリウム,1mg1錠,ワーファリン錠1mg,第一三共
+ワルファリンカリウム,2mg1錠,ワーファリン錠2mg,第一三共
+ワルファリンカリウム,5mg1錠,ワーファリン錠5mg,第一三共
+フロセミド,10mg1錠,ラシックス錠10mg,サノフィ
+フロセミド,20mg1錠,ラシックス錠20mg,サノフィ
+フロセミド,40mg1錠,ラシックス錠40mg,サノフィ
+レボチロキシンナトリウム水和物,12.5μg1錠,チラーヂンS錠12.5μg,あすか製薬
+レボチロキシンナトリウム水和物,25μg1錠,チラーヂンS錠25μg,あすか製薬
+レボチロキシンナトリウム水和物,50μg1錠,チラーヂンS錠50μg,あすか製薬
+レボチロキシンナトリウム水和物,100μg1錠,チラーヂンS錠100μg,あすか製薬`
 
 // 品名の文字列からmg値を抽出（μg→mg変換あり）
 function extractStrengthMg(name: string): number | null {
@@ -53,11 +53,13 @@ function parseCSV(text: string): { drugs: DrugMaster[]; errors: string[] } {
   const dataLines = lines.slice(1)
   dataLines.forEach((line, i) => {
     const cols = line.split(',').map((c) => c.trim().replace(/^"|"$/g, ''))
-    if (cols.length < 2) {
-      errors.push(`${i + 2}行目: 列数不足（${cols.length}列、最低2列必要）`)
+    if (cols.length < 3) {
+      errors.push(`${i + 2}行目: 列数不足（${cols.length}列、最低3列必要）`)
       return
     }
-    const [genericName, brandName] = cols
+    // A=成分名, B=規格, C=品名, D=メーカー（厚労省Excel形式）
+    const genericName = cols[0]
+    const brandName   = cols[2]
 
     if (!genericName) { errors.push(`${i + 2}行目: 成分名が空`); return }
     if (!brandName)   { errors.push(`${i + 2}行目: 品名が空`); return }
@@ -230,8 +232,8 @@ export default function AdminPage() {
             <div className="flex-1 space-y-2">
               <p className="text-sm font-medium text-slate-800">ExcelをCSV形式に整形して保存</p>
               <p className="text-xs text-slate-500 leading-relaxed">
-                以下の<strong>2列・この順番</strong>になるように列を整理し、「名前を付けて保存」→「CSV UTF-8（コンマ区切り）」で保存します。
-                <br />規格（mg/μg）は品名の文字列から<strong>自動で抽出</strong>されます。錠剤以外の行は自動的に読み飛ばされます。
+                厚労省Excelを<strong>列の並び替えなしに</strong>そのままCSV保存して使えます。
+                A列（成分名）とC列（品名）を使用し、品名に「錠」が含まれる行のみ自動取込みします。
               </p>
 
               {/* 列説明 */}
@@ -246,8 +248,10 @@ export default function AdminPage() {
                   </thead>
                   <tbody className="divide-y divide-slate-200">
                     {[
-                      ['A', '成分名', 'アムロジピンベシル酸塩'],
-                      ['B', '品名（規格込み）', 'アムロジン錠5mg'],
+                      ['A', '成分名 ✅使用', 'アムロジピンベシル酸塩'],
+                      ['B', '規格（無視）', '5mg1錠'],
+                      ['C', '品名 ✅使用', 'アムロジン錠5mg'],
+                      ['D', 'メーカー（無視）', '住友ファーマ'],
                     ].map(([col, label, ex]) => (
                       <tr key={col}>
                         <td className="px-3 py-1.5 font-mono text-slate-500">{col}</td>
@@ -259,7 +263,7 @@ export default function AdminPage() {
                 </table>
               </div>
               <p className="text-xs text-slate-400 bg-blue-50 rounded-lg px-3 py-2 border border-blue-100">
-                💡 厚労省Excelの「成分名」列と「品名」列の2列をそのままコピーすればOKです。規格mgの手入力は不要です。
+                💡 Excelを開いて「名前を付けて保存」→「CSV UTF-8（コンマ区切り）」を選ぶだけでOKです。列の加工は不要です。
               </p>
 
               <button
@@ -267,11 +271,8 @@ export default function AdminPage() {
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-medium rounded-lg transition-colors border border-blue-200"
               >
                 <Download size={13} />
-                テンプレートCSVをダウンロード（整形の見本）
+                テンプレートCSVをダウンロード（フォーマット確認用）
               </button>
-              <p className="text-xs text-slate-400">
-                ※ テンプレートにはヘッダーとサンプル行が入っています。厚労省ExcelのA・B列をこの形式に合わせてください。
-              </p>
             </div>
           </div>
 
