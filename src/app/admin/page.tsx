@@ -53,10 +53,7 @@ function parseCSV(text: string): { drugs: DrugMaster[]; errors: string[] } {
   const dataLines = lines.slice(1)
   dataLines.forEach((line, i) => {
     const cols = line.split(',').map((c) => c.trim().replace(/^"|"$/g, ''))
-    if (cols.length < 3) {
-      errors.push(`${i + 2}行目: 列数不足（${cols.length}列、最低3列必要）`)
-      return
-    }
+    if (cols.length < 3) return // 列数不足の行は無視（空行・特殊行など）
     // A=成分名, B=規格, C=品名, D=メーカー（厚労省Excel形式）
     const genericName = cols[0]
     const brandName   = cols[2]
