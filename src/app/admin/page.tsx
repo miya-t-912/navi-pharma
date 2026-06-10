@@ -5,24 +5,39 @@ import { Database, Download, Upload, CheckCircle, Trash2, ExternalLink, AlertCir
 import { DrugMaster } from '@/types'
 import { DRUG_MASTER, DRUG_MASTER_STORAGE_KEY, DRUG_MASTER_META_KEY } from '@/data/drugMaster'
 
-const TEMPLATE_CSV = `成分名,販売名,規格mg,剤形
-アムロジピンベシル酸塩,アムロジン錠2.5mg,2.5,錠
-アムロジピンベシル酸塩,アムロジン錠5mg,5,錠
-アムロジピンベシル酸塩,アムロジン錠10mg,10,錠
-エナラプリルマレイン酸塩,レニベース錠2.5,2.5,錠
-エナラプリルマレイン酸塩,レニベース錠5,5,錠
-エナラプリルマレイン酸塩,レニベース錠10,10,錠
-ワルファリンカリウム,ワーファリン錠0.5mg,0.5,錠
-ワルファリンカリウム,ワーファリン錠1mg,1,錠
-ワルファリンカリウム,ワーファリン錠2mg,2,錠
-ワルファリンカリウム,ワーファリン錠5mg,5,錠
-フロセミド,ラシックス錠10mg,10,錠
-フロセミド,ラシックス錠20mg,20,錠
-フロセミド,ラシックス錠40mg,40,錠
-レボチロキシンナトリウム水和物,チラーヂンS錠12.5μg,0.0125,錠
-レボチロキシンナトリウム水和物,チラーヂンS錠25μg,0.025,錠
-レボチロキシンナトリウム水和物,チラーヂンS錠50μg,0.05,錠
-レボチロキシンナトリウム水和物,チラーヂンS錠100μg,0.1,錠`
+const TEMPLATE_CSV = `成分名,品名
+アムロジピンベシル酸塩,アムロジン錠2.5mg
+アムロジピンベシル酸塩,アムロジン錠5mg
+アムロジピンベシル酸塩,アムロジン錠10mg
+エナラプリルマレイン酸塩,レニベース錠2.5
+エナラプリルマレイン酸塩,レニベース錠5
+エナラプリルマレイン酸塩,レニベース錠10
+ワルファリンカリウム,ワーファリン錠0.5mg
+ワルファリンカリウム,ワーファリン錠1mg
+ワルファリンカリウム,ワーファリン錠2mg
+ワルファリンカリウム,ワーファリン錠5mg
+フロセミド,ラシックス錠10mg
+フロセミド,ラシックス錠20mg
+フロセミド,ラシックス錠40mg
+レボチロキシンナトリウム水和物,チラーヂンS錠12.5μg
+レボチロキシンナトリウム水和物,チラーヂンS錠25μg
+レボチロキシンナトリウム水和物,チラーヂンS錠50μg
+レボチロキシンナトリウム水和物,チラーヂンS錠100μg`
+
+// 品名の文字列からmg値を抽出（μg→mg変換あり）
+function extractStrengthMg(name: string): number | null {
+  const ugMatch = name.match(/(\d+(?:\.\d+)?)\s*μg/i)
+  if (ugMatch) return parseFloat(ugMatch[1]) / 1000
+
+  const mgMatch = name.match(/(\d+(?:\.\d+)?)\s*mg/i)
+  if (mgMatch) return parseFloat(mgMatch[1])
+
+  // 単位なし数字（例: レニベース錠2.5）
+  const numMatch = name.match(/錠(\d+(?:\.\d+)?)(?:[^.\d]|$)/)
+  if (numMatch) return parseFloat(numMatch[1])
+
+  return null
+}
 
 function parseCSV(text: string): { drugs: DrugMaster[]; errors: string[] } {
   const lines = text.split('\n').map((l) => l.trim()).filter((l) => l.length > 0)
@@ -34,32 +49,34 @@ function parseCSV(text: string): { drugs: DrugMaster[]; errors: string[] } {
     return { drugs, errors }
   }
 
+  const today = new Date().toISOString().split('T')[0]
   const dataLines = lines.slice(1)
   dataLines.forEach((line, i) => {
     const cols = line.split(',').map((c) => c.trim().replace(/^"|"$/g, ''))
-    if (cols.length < 4) {
-      errors.push(`${i + 2}行目: 列数不足（${cols.length}列）`)
+    if (cols.length < 2) {
+      errors.push(`${i + 2}行目: 列数不足（${cols.length}列、最低2列必要）`)
       return
     }
-    const [genericName, brandName, mgStr, dosageForm] = cols
-    const strengthMg = parseFloat(mgStr)
+    const [genericName, brandName] = cols
 
     if (!genericName) { errors.push(`${i + 2}行目: 成分名が空`); return }
-    if (!brandName)    { errors.push(`${i + 2}行目: 販売名が空`); return }
-    if (isNaN(strengthMg) || strengthMg <= 0) {
-      errors.push(`${i + 2}行目: 規格mgが無効（${mgStr}）`)
+    if (!brandName)   { errors.push(`${i + 2}行目: 品名が空`); return }
+    if (!brandName.includes('錠')) return // 錠剤以外は無視（警告なし）
+
+    const strengthMg = extractStrengthMg(brandName)
+    if (strengthMg === null || strengthMg <= 0) {
+      errors.push(`${i + 2}行目: 品名から規格mg抽出できず（${brandName}）`)
       return
     }
-    if (!dosageForm.includes('錠')) return // 錠剤以外は無視
 
     drugs.push({
       id: `custom-${i + 1}`,
       genericName,
       brandName,
-      dosageForm,
+      dosageForm: '錠',
       strengthMg,
       unit: 'mg',
-      updatedAt: new Date().toISOString().split('T')[0],
+      updatedAt: today,
     })
   })
 
@@ -213,8 +230,8 @@ export default function AdminPage() {
             <div className="flex-1 space-y-2">
               <p className="text-sm font-medium text-slate-800">ExcelをCSV形式に整形して保存</p>
               <p className="text-xs text-slate-500 leading-relaxed">
-                以下の<strong>4列・この順番</strong>になるように列を整理し、「名前を付けて保存」→「CSV UTF-8（コンマ区切り）」で保存します。
-                <br />錠剤のみに絞り込んでおくとファイルが軽くなります。
+                以下の<strong>2列・この順番</strong>になるように列を整理し、「名前を付けて保存」→「CSV UTF-8（コンマ区切り）」で保存します。
+                <br />規格（mg/μg）は品名の文字列から<strong>自動で抽出</strong>されます。錠剤以外の行は自動的に読み飛ばされます。
               </p>
 
               {/* 列説明 */}
@@ -230,9 +247,7 @@ export default function AdminPage() {
                   <tbody className="divide-y divide-slate-200">
                     {[
                       ['A', '成分名', 'アムロジピンベシル酸塩'],
-                      ['B', '販売名', 'アムロジン錠5mg'],
-                      ['C', '規格mg（数字のみ）', '5'],
-                      ['D', '剤形', '錠'],
+                      ['B', '品名（規格込み）', 'アムロジン錠5mg'],
                     ].map(([col, label, ex]) => (
                       <tr key={col}>
                         <td className="px-3 py-1.5 font-mono text-slate-500">{col}</td>
@@ -243,6 +258,9 @@ export default function AdminPage() {
                   </tbody>
                 </table>
               </div>
+              <p className="text-xs text-slate-400 bg-blue-50 rounded-lg px-3 py-2 border border-blue-100">
+                💡 厚労省Excelの「成分名」列と「品名」列の2列をそのままコピーすればOKです。規格mgの手入力は不要です。
+              </p>
 
               <button
                 onClick={downloadTemplate}
@@ -252,7 +270,7 @@ export default function AdminPage() {
                 テンプレートCSVをダウンロード（整形の見本）
               </button>
               <p className="text-xs text-slate-400">
-                ※ テンプレートにはヘッダーとサンプル行が入っています。ExcelのA列〜D列をこの形式に整えてください。
+                ※ テンプレートにはヘッダーとサンプル行が入っています。厚労省ExcelのA・B列をこの形式に合わせてください。
               </p>
             </div>
           </div>
