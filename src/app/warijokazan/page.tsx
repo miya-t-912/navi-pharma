@@ -115,7 +115,10 @@ export default function WarijoPage() {
                     onClick={() => handleSelectDrug(drug)}
                     className="w-full text-left px-3 py-2.5 hover:bg-blue-50 transition-colors"
                   >
-                    <p className="text-sm font-medium text-slate-800">{drug.genericName}</p>
+                    <div className="flex items-baseline justify-between gap-2">
+                      <p className="text-sm font-medium text-slate-800">{drug.genericName}</p>
+                      <span className="text-xs font-semibold text-blue-600 shrink-0">{drug.strengthMg}{drug.unit}</span>
+                    </div>
                     <p className="text-xs text-slate-400">{drug.brandName}</p>
                   </button>
                 ))}

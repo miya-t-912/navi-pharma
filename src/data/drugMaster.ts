@@ -43,7 +43,7 @@ export function loadCustomMaster(): DrugMaster[] | null {
   }
 }
 
-// 前方一致インクリメンタル検索
+// 成分名または品名にマッチする規格を返す（成分名+mg単位で重複排除）
 export const searchDrugByName = (query: string, drugs: DrugMaster[] = DRUG_MASTER): DrugMaster[] => {
   if (!query || query.length < 2) return []
   const q = query.toLowerCase()
@@ -52,8 +52,9 @@ export const searchDrugByName = (query: string, drugs: DrugMaster[] = DRUG_MASTE
     const matches =
       d.genericName.toLowerCase().includes(q) ||
       d.brandName.toLowerCase().includes(q)
-    if (matches && !seen.has(d.genericName)) {
-      seen.add(d.genericName)
+    const key = `${d.genericName}_${d.strengthMg}`
+    if (matches && !seen.has(key)) {
+      seen.add(key)
       return true
     }
     return false
