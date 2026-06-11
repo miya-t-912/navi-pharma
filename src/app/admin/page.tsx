@@ -75,15 +75,12 @@ function parseCSV(text: string): { drugs: DrugMaster[]; errors: string[] } {
 
     // 規格列(B)優先、なければ品名(C)から抽出
     const strengthMg = extractStrengthMg(kisoku) ?? extractStrengthMg(brandName)
-    if (strengthMg === null || strengthMg <= 0) {
-      errors.push(`${i + 2}行目: 規格mg抽出できず（規格:${kisoku} 品名:${brandName}）`)
-      return
-    }
+    if (strengthMg === null || strengthMg <= 0) return // 配合錠など規格不明は無視（警告なし）
 
     drugs.push({
       id: `custom-${i + 1}`,
       genericName,
-      brandName,
+      brandName: normalizeWidth(brandName), // 全角→半角（表示の統一）
       dosageForm: '錠',
       strengthMg,
       unit: 'mg',
