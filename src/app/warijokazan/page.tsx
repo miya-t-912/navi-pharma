@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Pill, CheckCircle, XCircle, Search, X } from 'lucide-react'
 import { DRUG_MASTER, loadCustomMaster, searchDrugByName, checkSplitStrengthExists } from '@/data/drugMaster'
+import { loadMasterFromFirebase } from '@/lib/drugMasterDB'
 import { DrugMaster } from '@/types'
 import { CopyButton } from '@/components/common/CopyButton'
 
@@ -17,11 +18,28 @@ export default function WarijoPage() {
   const [status, setStatus] = useState<CheckStatus>('idle')
   const [matchingDrugs, setMatchingDrugs] = useState<DrugMaster[]>([])
   const [activeDrugs, setActiveDrugs] = useState<DrugMaster[]>(DRUG_MASTER)
+  const [masterLoading, setMasterLoading] = useState(true)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
-    const custom = loadCustomMaster()
-    if (custom) setActiveDrugs(custom)
+    let cancelled = false
+    ;(async () => {
+      try {
+        const drugs = await loadMasterFromFirebase()
+        if (!cancelled && drugs && drugs.length > 0) {
+          setActiveDrugs(drugs)
+          setMasterLoading(false)
+          return
+        }
+      } catch {}
+      // Firebase に未登録またはオフライン → localStorage を確認
+      if (!cancelled) {
+        const custom = loadCustomMaster()
+        if (custom) setActiveDrugs(custom)
+        setMasterLoading(false)
+      }
+    })()
+    return () => { cancelled = true }
   }, [])
 
   const afterSplitMg = selectedDrug ? selectedDrug.strengthMg / splitRatio : 0
@@ -78,8 +96,11 @@ export default function WarijoPage() {
         <div className="px-4 py-3 bg-rose-50 border-b border-rose-100 flex items-center gap-2">
           <Pill size={16} className="text-rose-500" />
           <h3 className="text-sm font-semibold text-rose-700">割錠加算 算定可否チェック</h3>
-          <span className={`ml-auto text-xs px-2 py-0.5 rounded-full font-medium ${activeDrugs === DRUG_MASTER ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>
-            {activeDrugs === DRUG_MASTER ? `サンプル ${DRUG_MASTER.length}件` : `カスタム ${activeDrugs.length.toLocaleString()}件`}
+          <span className={`ml-auto text-xs px-2 py-0.5 rounded-full font-medium ${
+            masterLoading ? 'bg-slate-100 text-slate-500' :
+            activeDrugs === DRUG_MASTER ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'
+          }`}>
+            {masterLoading ? '読み込み中...' : activeDrugs === DRUG_MASTER ? `サンプル ${DRUG_MASTER.length}件` : `カスタム ${activeDrugs.length.toLocaleString()}件`}
           </span>
         </div>
 
@@ -234,8 +255,7 @@ export default function WarijoPage() {
       <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
         <p className="text-xs font-semibold text-amber-700 mb-1">⚠️ ご注意</p>
         <p className="text-xs text-amber-700 leading-relaxed">
-          このチェックはサンプルデータに基づいています。実際の算定可否は最新の薬価基準を必ずご確認ください。
-          管理者はCSVアップロードで薬価マスタを最新化できます。
+          算定可否は最新の薬価基準を必ずご確認ください。薬価改定後（年2回：4月・10月）は管理者がマスタを更新してください。
         </p>
       </div>
     </div>

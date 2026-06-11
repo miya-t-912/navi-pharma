@@ -1,9 +1,10 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Database, Download, Upload, CheckCircle, Trash2, ExternalLink, AlertCircle } from 'lucide-react'
+import { Database, Download, Upload, CheckCircle, Trash2, ExternalLink, AlertCircle, Loader2 } from 'lucide-react'
 import { DrugMaster } from '@/types'
 import { DRUG_MASTER, DRUG_MASTER_STORAGE_KEY, DRUG_MASTER_META_KEY } from '@/data/drugMaster'
+import { saveMasterToFirebase, loadMetaFromFirebase, deleteMasterFromFirebase } from '@/lib/drugMasterDB'
 
 const TEMPLATE_CSV = `成分名,規格,品名
 アムロジピンベシル酸塩,２．５ｍｇ１錠,アムロジン錠２．５ｍｇ
@@ -97,18 +98,35 @@ export default function AdminPage() {
   const [preview, setPreview]         = useState<DrugMaster[]>([])
   const [parseErrors, setParseErrors] = useState<string[]>([])
   const [fileName, setFileName]       = useState<string | null>(null)
-  const [saveStatus, setSaveStatus]   = useState<'idle' | 'saved' | 'error'>('idle')
+  const [saveStatus, setSaveStatus]   = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const fileRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    try {
-      const meta = localStorage.getItem(DRUG_MASTER_META_KEY)
-      if (meta) {
-        const { count, savedAt: at } = JSON.parse(meta)
-        setSavedCount(count)
-        setSavedAt(at)
-      }
-    } catch {}
+    // Firebase優先、失敗時はlocalStorageにフォールバック
+    loadMetaFromFirebase()
+      .then((meta) => {
+        if (meta) {
+          setSavedCount(meta.count)
+          setSavedAt(meta.updatedAt)
+        } else {
+          const s = localStorage.getItem(DRUG_MASTER_META_KEY)
+          if (s) {
+            const { count, savedAt: at } = JSON.parse(s)
+            setSavedCount(count)
+            setSavedAt(at)
+          }
+        }
+      })
+      .catch(() => {
+        try {
+          const s = localStorage.getItem(DRUG_MASTER_META_KEY)
+          if (s) {
+            const { count, savedAt: at } = JSON.parse(s)
+            setSavedCount(count)
+            setSavedAt(at)
+          }
+        } catch {}
+      })
   }, [])
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -131,10 +149,13 @@ export default function AdminPage() {
     reader.readAsArrayBuffer(file)
   }
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    setSaveStatus('saving')
     try {
-      localStorage.setItem(DRUG_MASTER_STORAGE_KEY, JSON.stringify(preview))
+      await saveMasterToFirebase(preview)
+      // オフライン時のフォールバック用にローカルにもキャッシュ
       const now = new Date().toISOString().split('T')[0]
+      localStorage.setItem(DRUG_MASTER_STORAGE_KEY, JSON.stringify(preview))
       localStorage.setItem(DRUG_MASTER_META_KEY, JSON.stringify({ count: preview.length, savedAt: now }))
       setSavedCount(preview.length)
       setSavedAt(now)
@@ -148,7 +169,10 @@ export default function AdminPage() {
     }
   }
 
-  const handleReset = () => {
+  const handleReset = async () => {
+    try {
+      await deleteMasterFromFirebase()
+    } catch {}
     localStorage.removeItem(DRUG_MASTER_STORAGE_KEY)
     localStorage.removeItem(DRUG_MASTER_META_KEY)
     setSavedCount(null)
@@ -362,10 +386,20 @@ export default function AdminPage() {
 
                 <button
                   onClick={handleSave}
-                  className="w-full flex items-center justify-center gap-2 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-semibold text-sm transition-colors shadow-sm"
+                  disabled={saveStatus === 'saving'}
+                  className="w-full flex items-center justify-center gap-2 py-3 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white rounded-xl font-semibold text-sm transition-colors shadow-sm"
                 >
-                  <CheckCircle size={16} />
-                  {preview.length.toLocaleString()}件を保存して割錠チェックに反映
+                  {saveStatus === 'saving' ? (
+                    <>
+                      <Loader2 size={16} className="animate-spin" />
+                      Firebase に保存中...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle size={16} />
+                      {preview.length.toLocaleString()}件を保存して割錠チェックに反映
+                    </>
+                  )}
                 </button>
               </div>
             </div>
@@ -377,13 +411,13 @@ export default function AdminPage() {
       {saveStatus === 'saved' && (
         <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3">
           <CheckCircle size={16} className="text-emerald-600 shrink-0" />
-          <p className="text-sm text-emerald-700 font-medium">保存しました。割錠チェックページに反映されています。</p>
+          <p className="text-sm text-emerald-700 font-medium">保存しました。全端末の割錠チェックに自動反映されます。</p>
         </div>
       )}
       {saveStatus === 'error' && (
         <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
           <AlertCircle size={16} className="text-red-500 shrink-0" />
-          <p className="text-sm text-red-600">保存に失敗しました。ブラウザのストレージ容量が不足している可能性があります。</p>
+          <p className="text-sm text-red-600">保存に失敗しました。ネットワーク接続を確認してください。</p>
         </div>
       )}
 
