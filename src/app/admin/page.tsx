@@ -226,7 +226,10 @@ export default function AdminPage() {
               <p className="text-sm font-medium text-slate-800">厚労省から薬価基準リスト（Excel）をダウンロード</p>
               <p className="text-xs text-slate-500 leading-relaxed">
                 厚生労働省の薬価基準収載医薬品コードリストを取得します。
-                ページ内の「内用薬」または「全品目」のExcelを選択してください。
+                薬効分類ごとにファイルが分かれているため、<strong>「全品目」</strong>または<strong>「内用薬（全カテゴリ）」</strong>のExcelを選択してください。
+              </p>
+              <p className="text-xs text-amber-700 bg-amber-50 rounded-lg px-3 py-2 border border-amber-200">
+                ⚠ 「01_01」などカテゴリ別ファイルは一部の薬しか含まれません。アムロジピン・ワルファリン等の割錠対象薬を検索するには全品目ファイルが必要です。
               </p>
               <a
                 href="https://www.mhlw.go.jp/topics/2024/04/tp20240401-01.html"
